@@ -1,9 +1,9 @@
 import * as React from "react";
 import * as ReactDOM from "react-dom";
 
-import { Hello } from "./components/Hello";
+import { Board } from "./components/Board";
 
 ReactDOM.render(
-    <Hello compiler="a" framework="b" />,
+    <Board compiler="a" framework="b" />,
     document.getElementById("example")
 );
