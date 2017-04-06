@@ -17,9 +17,9 @@ export class Hello extends React.Component<HelloProps, undefined> {
 
     let header = [];
     for (let j = 0; j < width; j++) {
-      header.push(<th>{this.columnName(j)}</th>);
+      header.push(<th key={j}>{this.columnName(j)}</th>);
     }
-    grid.push(<tr><th></th>{header}</tr>);
+    grid.push(<tr key="-1"><th key="-1"></th>{header}</tr>);
 
     for (let i = 0; i < height; i++) {
       let row = [];
@@ -32,6 +32,12 @@ export class Hello extends React.Component<HelloProps, undefined> {
         switch (state) {
           case CellState.HasShip:
             style = "ship";
+
+            if (this.notTaken(g, i, j + 1)) { style += " ship-border-right"; }
+            if (this.notTaken(g, i, j - 1)) { style += " ship-border-left"; }
+            if (this.notTaken(g, i + 1, j)) { style += " ship-border-bottom"; }
+            if (this.notTaken(g, i - 1, j)) { style += " ship-border-top"; }
+
             break;
           default:
             style = "";
@@ -43,7 +49,7 @@ export class Hello extends React.Component<HelloProps, undefined> {
         );
       }
 
-      grid.push(<tr key={i}><th>{this.rowName(i)}</th>{row}</tr>);
+      grid.push(<tr key={i}><th key={i}>{this.rowName(i)}</th>{row}</tr>);
     }
 
     return <div>
@@ -56,6 +62,11 @@ export class Hello extends React.Component<HelloProps, undefined> {
         </tbody>
       </table>
     </div>;
+  }
+
+  private notTaken(grid: Grid, i: number, j: number): boolean {
+    const state: CellState = grid.getCellState(i, j);
+    return state === CellState.Miss || state === CellState.Empty;
   }
 
   private rowName(id: number): string {
