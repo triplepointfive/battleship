@@ -6,7 +6,7 @@
 
   gulp.task("sass", function () {
     return gulp.src("./src/*.scss")
-      .pipe(sass().on("error", sass.logError))
+      .pipe(sass({outputStyle: "compressed"}).on("error", sass.logError))
       .pipe(gulp.dest("./dist"));
   });
 

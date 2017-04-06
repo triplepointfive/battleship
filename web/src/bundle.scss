@@ -1,0 +1,44 @@
+$ship_border: 3px;
+$ship_border_color: #284BC0;
+
+table.battlefield {
+  tr {
+    th, td {
+      text-align: center;
+    }
+
+    td {
+      border: 1px #0275d8 solid;
+    }
+
+    td.move {
+      cursor: move;
+      background-color: black;
+    }
+
+    th {
+      border: none;
+      font-weight: lighter;
+    }
+
+    td.ship {
+      background-color: #C0CDF9;
+    }
+
+    td.ship-border-right {
+      border-right: $ship_border $ship_border_color solid;
+    }
+
+    td.ship-border-left {
+      border-left: $ship_border $ship_border_color solid;
+    }
+
+    td.ship-border-top {
+      border-top: $ship_border $ship_border_color solid;
+    }
+
+    td.ship-border-bottom {
+      border-bottom: $ship_border $ship_border_color solid;
+    }
+  }
+}
