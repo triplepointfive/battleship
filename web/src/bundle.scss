@@ -1,5 +1,7 @@
-$ship_border: 3px;
-$ship_border_color: #284BC0;
+$ship-border: 3px;
+$ship-border-color: #284BC0;
+
+$ship-hit-background: pink;
 
 table.battlefield {
   tr {
@@ -7,38 +9,55 @@ table.battlefield {
       text-align: center;
     }
 
-    td {
-      border: 1px #0275d8 solid;
-    }
-
-    td.move {
-      cursor: move;
-      background-color: black;
-    }
-
     th {
       border: none;
       font-weight: lighter;
     }
 
-    td.ship {
-      background-color: #C0CDF9;
-    }
+    td {
+      border: 1px #0275d8 solid;
 
-    td.ship-border-right {
-      border-right: $ship_border $ship_border_color solid;
-    }
+      &.move {
+        cursor: move;
+        background-color: black;
+      }
 
-    td.ship-border-left {
-      border-left: $ship_border $ship_border_color solid;
-    }
+      &.ship {
+        background-color: #C0CDF9;
+      }
 
-    td.ship-border-top {
-      border-top: $ship_border $ship_border_color solid;
-    }
+      &.ship-hit {
+        background-color: $ship-hit-background;
+        content: " \2219 ";
+      }
 
-    td.ship-border-bottom {
-      border-bottom: $ship_border $ship_border_color solid;
+      &.miss, &.ship-hit {
+        cursor: not-allowed;
+      }
+
+      &.unknown {
+        cursor: pointer;
+
+        &:hover {
+          background-color: lightblue;
+        }
+      }
+
+      &.ship-border-right {
+        border-right: $ship-border $ship-border-color solid;
+      }
+
+      &.ship-border-left {
+        border-left: $ship-border $ship-border-color solid;
+      }
+
+      &.ship-border-top {
+        border-top: $ship-border $ship-border-color solid;
+      }
+
+      &.ship-border-bottom {
+        border-bottom: $ship-border $ship-border-color solid;
+      }
     }
   }
 }

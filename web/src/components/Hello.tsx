@@ -27,7 +27,8 @@ export class Hello extends React.Component<HelloProps, undefined> {
       for (let j = 0; j < width; j++) {
         const state: CellState = g.getCellState(i, j);
 
-        let style: string;
+        let style: string = "";
+        let content: string = "";
 
         switch (state) {
           case CellState.HasShip:
@@ -37,15 +38,29 @@ export class Hello extends React.Component<HelloProps, undefined> {
             if (this.notTaken(g, i, j - 1)) { style += " ship-border-left"; }
             if (this.notTaken(g, i + 1, j)) { style += " ship-border-bottom"; }
             if (this.notTaken(g, i - 1, j)) { style += " ship-border-top"; }
-
             break;
-          default:
-            style = "";
+
+          case CellState.Hit:
+            style = "ship-hit";
+
+            if (this.notTaken(g, i, j + 1)) { style += " ship-border-right"; }
+            if (this.notTaken(g, i, j - 1)) { style += " ship-border-left"; }
+            if (this.notTaken(g, i + 1, j)) { style += " ship-border-bottom"; }
+            if (this.notTaken(g, i - 1, j)) { style += " ship-border-top"; }
+            break;
+
+          case CellState.Miss:
+            style = "miss";
+            content = "•";
+            break;
+
+          case CellState.Empty:
+            style = "unknown";
             break;
         }
 
         row.push(
-          <td className={style} key={i * j + j}></td>
+          <td className={style} key={i * j + j}>{content}</td>
         );
       }
 

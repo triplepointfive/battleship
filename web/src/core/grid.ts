@@ -22,6 +22,9 @@ export class Grid {
     this.grid[8][4] = CellState.HasShip;
 
     this.grid[6][6] = CellState.HasShip;
+
+    this.grid[8][2] = CellState.Hit;
+    this.grid[8][3] = CellState.Miss;
   }
 
   public getCellState(i: number, j: number): CellState {
