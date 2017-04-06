@@ -15,6 +15,12 @@ export class Hello extends React.Component<HelloProps, undefined> {
 
     let grid = [];
 
+    let header = [];
+    for (let j = 0; j < width; j++) {
+      header.push(<th>{this.columnName(j)}</th>);
+    }
+    grid.push(<tr><th></th>{header}</tr>);
+
     for (let i = 0; i < height; i++) {
       let row = [];
 
@@ -29,6 +35,7 @@ export class Hello extends React.Component<HelloProps, undefined> {
             break;
           default:
             style = "";
+            break;
         }
 
         row.push(
@@ -36,7 +43,7 @@ export class Hello extends React.Component<HelloProps, undefined> {
         );
       }
 
-      grid.push(<tr key={i}>{row}</tr>);
+      grid.push(<tr key={i}><th>{this.rowName(i)}</th>{row}</tr>);
     }
 
     return <div>
@@ -49,5 +56,13 @@ export class Hello extends React.Component<HelloProps, undefined> {
         </tbody>
       </table>
     </div>;
+  }
+
+  private rowName(id: number): string {
+    return String(id + 1);
+  }
+
+  private columnName(id: number): string {
+    return "абвгдежзиклмнопрстуфхцчшщъыьэюя"[id % 31];
   }
 }
