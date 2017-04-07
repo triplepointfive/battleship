@@ -11,6 +11,8 @@ import qualified Data.Text.IO as T
 
 import qualified Network.WebSockets as WS
 
+import Warships.Lib
+
 type Client = (Text, WS.Connection)
 
 type ServerState = [Client]
