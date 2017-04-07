@@ -28,7 +28,7 @@ export class Grid {
   }
 
   public actOn(i: number, j: number): void {
-    switch (this.getCellState(i, j)) {
+    switch (this.grid[i][j]) {
       case CellState.Empty:
         this.grid[i][j] = CellState.Miss;
         break;
@@ -42,7 +42,9 @@ export class Grid {
     if (i < 0 || j < 0 || i >= this.width || j >= this.height) {
       return CellState.Empty;
     } else {
-      return this.grid[i][j];
+      let state: CellState = this.grid[i][j];
+
+      return CellState.HasShip === state ? CellState.Empty : state;
     }
   }
 }
