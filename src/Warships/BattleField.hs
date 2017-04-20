@@ -32,20 +32,53 @@ attack pos field = flip execState field $ do
   cell <- getCell pos <$> get
   case cell of
     Empty -> setMiss pos
-    Miss  -> return ()
+    Ship Hidden shipID -> do
+      decreaseShipHealth shipID
+      setCell (Ship Injured shipID) pos
+      checkShip shipID
+    _ -> return ()
+
+decreaseShipHealth :: ShipID -> OnBattleField ()
+decreaseShipHealth shipID = do
+  field <- get
+  put $ field { ships = Map.adjust pred shipID (ships field) }
+
+getShipHealth :: ShipID -> OnBattleField Int
+getShipHealth shipID = Map.findWithDefault defaultValue shipID . ships <$> get
+  where
+    defaultValue = error $ "ship " ++ show shipID ++ " couldn't be found"
+
+checkShip :: ShipID -> OnBattleField ()
+checkShip shipID = do
+  shipHealth <- getShipHealth shipID
+  when (shipHealth == 0) (killShip shipID)
+
+killShip :: ShipID -> OnBattleField ()
+killShip shipID = markShipDead shipID >> revealEmpty shipID
+
+markShipDead :: ShipID -> OnBattleField ()
+markShipDead shipID = onGrid (Map.map killShipCell)
+  where
+    killShipCell :: Cell -> Cell
+    killShipCell (Ship Injured sID) | sID == shipID = Ship Killed shipID
+    killShipCell cell = cell
+
+revealEmpty :: ShipID -> OnBattleField ()
+revealEmpty shipID = return ()
 
 getCell :: Pos -> BattleField -> Cell
 getCell pos field = Map.findWithDefault Empty pos (grid field)
 
-setMiss :: Pos -> State BattleField ()
+setMiss :: Pos -> OnBattleField ()
 setMiss = setCell Miss
 
 setCell :: Cell -> Pos -> OnBattleField ()
-setCell cell pos = modify insertCell
-  where
-    insertCell :: BattleField -> BattleField
-    insertCell field
-      = field { grid = Map.insert pos cell (grid field) }
+setCell cell pos = onGrid (Map.insert pos cell)
+
+onGrid :: (Grid -> Grid) -> OnBattleField ()
+onGrid f = do
+  field <- get
+  put $ field { grid = f (grid field) }
 
 bf = BattleField g2 s2
   where
