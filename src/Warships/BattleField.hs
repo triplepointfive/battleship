@@ -20,8 +20,10 @@ type Grid = Map.Map Pos Cell
 
 data BattleField
   = BattleField
-  { grid  :: !Grid
-  , ships :: !(Map.Map ShipID Int)
+  { width  :: !Int
+  , height :: !Int
+  , grid   :: !Grid
+  , ships  :: !(Map.Map ShipID Int)
   }
   deriving (Show, Eq)
 
@@ -99,7 +101,7 @@ onGrid f = modify (\ field -> field { grid = f (grid field) })
 displayField :: BattleField -> IO ()
 displayField bf = putStrLn mapp
   where
-    mapp = intercalate "\n" [ intercalate "" [ sc $ getCell (x, y) bf | x <- [0..4] ] | y <- [0..4] ]
+    mapp = intercalate "\n" [ intercalate "" [ sc $ getCell (x, y) bf | x <- [0..width bf - 1] ] | y <- [0..height bf - 1] ]
     sc Empty            = "."
     sc Miss             = "•"
     sc (Ship Hidden _)  = "□"
@@ -107,7 +109,7 @@ displayField bf = putStrLn mapp
     sc (Ship Killed _)  = "x"
 
 tF :: BattleField
-tF = BattleField g2 s2
+tF = BattleField 5 5 g2 s2
   where
     s2 = Map.fromList
       [ (ShipID 1, 1)

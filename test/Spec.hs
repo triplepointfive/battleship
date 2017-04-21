@@ -10,7 +10,7 @@ import qualified Data.Map.Strict as Map
 -- .□.■.
 -- ...□.
 testField :: BattleField
-testField = BattleField g2 s2
+testField = BattleField 5 5 g2 s2
   where
     s2 = Map.fromList
       [ (ShipID 1, 1)
