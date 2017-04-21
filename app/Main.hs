@@ -20,21 +20,25 @@ type Client = WS.Connection
 instance Eq WS.Connection where
   _ == _ = False
 
-type ServerState = [Client]
+data ServerState
+  = ServerState
+  { clients :: ![Client]
+  , field :: !BattleField
+  }
 
 newServerState :: ServerState
-newServerState = []
+newServerState = ServerState [] tF
 
 addClient :: Client -> ServerState -> ServerState
-addClient client clients = client : clients
+addClient client state = state { clients = client : clients state }
 
 removeClient :: Client -> ServerState -> ServerState
-removeClient client = filter (/= client)
+removeClient client = id -- filter (/= client)
 
 broadcast :: Text -> ServerState -> IO ()
-broadcast message clients = do
+broadcast message state = do
     T.putStrLn message
-    forM_ clients (`WS.sendTextData` message)
+    forM_ (clients state) (`WS.sendTextData` message)
 
 main :: IO ()
 main = do
@@ -66,7 +70,16 @@ application state pending = do
 talk :: WS.Connection -> MVar ServerState -> IO ()
 talk conn state = forever $ do
     msg <- T.unpack <$> WS.receiveData conn :: IO String
-    liftIO $ readMVar state >>= broadcast (displayField $ attack (read msg) tF)
+    s' <- readMVar state
+    let f' = attack (read msg) (field s')
+
+    modifyMVar_ state $ \s -> return $ s { field = f' }
+
+    liftIO $ readMVar state >>= broadcastField
+
+broadcastField :: ServerState -> IO ()
+broadcastField state@(ServerState _ field) =
+  broadcast (displayField field) state
 
 displayField :: BattleField -> T.Text
 displayField bf = T.intercalate "" [ T.intercalate "" [ sc $ getCell (x, y) bf | y <- [0..height bf - 1] ] | x <- [0..width bf - 1] ]
