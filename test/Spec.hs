@@ -14,8 +14,8 @@ testField = BattleField g2 s2
   where
     s2 = Map.fromList
       [ (ShipID 1, 1)
-      , (ShipID 2, 2)
-      , (ShipID 3, 3)
+      , (ShipID 2, 1)
+      , (ShipID 3, 2)
       ]
     g2 = Map.fromList
       [ ((0,0), Miss)
@@ -48,11 +48,14 @@ main = hspec $
             getCell pos (attack pos testField) `shouldBe` Ship Injured (ShipID 3)
       it "marks it killed if all ship cells are dead" $
         let pos = (3, 4) in
-            getCell pos (attack pos testField) `shouldBe` Ship Injured (ShipID 2)
+            getCell pos (attack pos testField) `shouldBe` Ship Killed (ShipID 2)
       it "marks remaining injured cells dead" $
-        getCell (3, 3) (attack (3, 4) testField) `shouldBe` Ship Injured (ShipID 2)
-    describe "on a one cell ship" $
+        getCell (3, 3) (attack (3, 4) testField) `shouldBe` Ship Killed (ShipID 2)
+      it "marks adjust cells dead" $
+        getCell (4, 4) (attack (3, 4) testField) `shouldBe` Miss
+    describe "on a one cell ship" $ do
       it "marks it dead" $
         let pos = (3, 1) in
             getCell pos (attack pos testField) `shouldBe` Ship Killed (ShipID 1)
-
+      it "marks adjust cells dead" $
+        getCell (2, 1) (attack (3, 1) testField) `shouldBe` Miss

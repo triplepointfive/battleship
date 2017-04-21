@@ -55,16 +55,34 @@ checkShip shipID = do
 
 killShip :: ShipID -> OnBattleField ()
 killShip shipID = markShipDead shipID >> revealEmpty shipID
-
-markShipDead :: ShipID -> OnBattleField ()
-markShipDead shipID = onGrid (Map.map killShipCell)
   where
-    killShipCell :: Cell -> Cell
-    killShipCell (Ship Injured sID) | sID == shipID = Ship Killed shipID
-    killShipCell cell = cell
+    markShipDead :: ShipID -> OnBattleField ()
+    markShipDead sID = onGrid (Map.map killShipCell)
+      where
+        killShipCell :: Cell -> Cell
+        killShipCell cell
+          | sameShip cell sID = Ship Killed sID
+          | otherwise         = cell
 
-revealEmpty :: ShipID -> OnBattleField ()
-revealEmpty shipID = return ()
+    revealEmpty :: ShipID -> OnBattleField ()
+    revealEmpty sID = onGrid $ \g ->
+      let shipCells   = Map.keys $ Map.filter (`sameShip` sID) g
+          adjustCells = concatMap adjustPositions shipCells
+       in
+       foldl (flip (Map.alter cs)) g adjustCells
+      where
+        cs :: Maybe Cell -> Maybe Cell
+        cs Nothing = Just Miss
+        cs (Just Empty) = Just Miss
+        cs c = c
+
+adjustPositions :: Pos -> [Pos]
+adjustPositions (x, y) = filter (/= (x,y))
+  [(x + i, y + j) | i <- [-1,0,1], j <- [-1,0,1]]
+
+sameShip :: Cell -> ShipID -> Bool
+sameShip (Ship _ sID) shipID = sID == shipID
+sameShip _ _ = False
 
 getCell :: Pos -> BattleField -> Cell
 getCell pos field = Map.findWithDefault Empty pos (grid field)
@@ -76,18 +94,32 @@ setCell :: Cell -> Pos -> OnBattleField ()
 setCell cell pos = onGrid (Map.insert pos cell)
 
 onGrid :: (Grid -> Grid) -> OnBattleField ()
-onGrid f = do
-  field <- get
-  put $ field { grid = f (grid field) }
+onGrid f = modify (\ field -> field { grid = f (grid field) })
 
-bf = BattleField g2 s2
+displayField :: BattleField -> IO ()
+displayField bf = putStrLn mapp
+  where
+    mapp = intercalate "\n" [ intercalate "" [ sc $ getCell (x, y) bf | x <- [0..4] ] | y <- [0..4] ]
+    sc Empty            = "."
+    sc Miss             = "•"
+    sc (Ship Hidden _)  = "□"
+    sc (Ship Injured _) = "■"
+    sc (Ship Killed _)  = "x"
+
+tF :: BattleField
+tF = BattleField g2 s2
   where
     s2 = Map.fromList
       [ (ShipID 1, 1)
-      , (ShipID 2, 2)
+      , (ShipID 2, 1)
+      , (ShipID 3, 2)
       ]
     g2 = Map.fromList
-      [ ((1,1), Ship Hidden (ShipID 1))
-      , ((3,4), Ship Injured (ShipID 2))
-      , ((3,3), Ship Hidden (ShipID 2))
+      [ ((0,0), Miss)
+      , ((3,1), Ship Hidden  (ShipID 1))
+      , ((3,3), Ship Injured (ShipID 2))
+      , ((3,4), Ship Hidden  (ShipID 2))
+      , ((1,1), Ship Hidden  (ShipID 3))
+      , ((1,2), Ship Injured (ShipID 3))
+      , ((1,3), Ship Hidden  (ShipID 3))
       ]
