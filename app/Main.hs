@@ -65,11 +65,11 @@ application state pending = do
 
 talk :: WS.Connection -> MVar ServerState -> IO ()
 talk conn state = forever $ do
-    msg <- WS.receiveData conn :: IO T.Text
-    liftIO $ readMVar state >>= broadcast (displayField tF)
+    msg <- T.unpack <$> WS.receiveData conn :: IO String
+    liftIO $ readMVar state >>= broadcast (displayField $ attack (read msg) tF)
 
 displayField :: BattleField -> T.Text
-displayField bf = T.intercalate "\n" [ T.intercalate "" [ sc $ getCell (x, y) bf | x <- [0..width bf - 1] ] | y <- [0..height bf - 1] ]
+displayField bf = T.intercalate "" [ T.intercalate "" [ sc $ getCell (x, y) bf | y <- [0..height bf - 1] ] | x <- [0..width bf - 1] ]
   where
     sc Empty            = "E"
     sc Miss             = "M"
@@ -78,7 +78,7 @@ displayField bf = T.intercalate "\n" [ T.intercalate "" [ sc $ getCell (x, y) bf
     sc (Ship Killed _)  = "K"
 
 tF :: BattleField
-tF = BattleField 10 10 g2 s2
+tF = BattleField 5 5 g2 s2
   where
     s2 = Map.fromList
       [ (ShipID 1, 1)
@@ -87,7 +87,7 @@ tF = BattleField 10 10 g2 s2
       ]
     g2 = Map.fromList
       [ ((0,0), Miss)
-      , ((3,1), Ship Hidden  (ShipID 1))
+      , ((3,0), Ship Hidden  (ShipID 1))
       , ((3,3), Ship Injured (ShipID 2))
       , ((3,4), Ship Hidden  (ShipID 2))
       , ((1,1), Ship Hidden  (ShipID 3))

@@ -1,4 +1,4 @@
-export enum CellState { Empty = 0, HasShip = 1, Miss = 2, Hit = 3 }
+export enum CellState { Empty = 0, HasShip = 1, Miss = 2, Hit = 3, Kill = 4 }
 
 export class Grid {
   private grid: Array<Array<CellState>> = [];
@@ -13,18 +13,49 @@ export class Grid {
 
       this.grid.push(row);
     }
+  }
 
-    this.grid[2][3] = CellState.HasShip;
-    this.grid[2][4] = CellState.HasShip;
+  public refresh(grid: string): Grid {
+    for (let k: number = 0; k < grid.length; k++) {
+      let cell = CellState.Empty;
 
-    this.grid[5][4] = CellState.HasShip;
-    this.grid[7][4] = CellState.HasShip;
-    this.grid[8][4] = CellState.HasShip;
+      switch (grid[k]) {
+        case "E":
+          cell = CellState.Empty;
+          break;
+        case "M":
+          cell = CellState.Miss;
+          break;
+        case "H":
+          cell = CellState.HasShip;
+          break;
+        case "I":
+          cell = CellState.Hit;
+          break;
+        case "K":
+          cell = CellState.Kill;
+          break;
+        default:
+          throw "Unknown cell type: " + grid[k];
+      }
 
-    this.grid[6][6] = CellState.HasShip;
+      let i = Math.trunc(k / this.height);
+      let j = k % this.width;
+      this.grid[i][j] = cell;
+    }
 
-    this.grid[8][2] = CellState.Hit;
-    this.grid[8][3] = CellState.Miss;
+
+    for (let i: number = 0; i < this.height; i++) {
+      let row = [];
+
+      for (let j: number = 0; j < this.width; j++) {
+        row.push(CellState.Empty);
+      }
+
+      this.grid.push(row);
+    }
+
+    return this;
   }
 
   public actOn(i: number, j: number): void {

@@ -8,14 +8,42 @@ interface BoardState { grid: Grid; }
 export class Board extends React.Component<BoardProps, BoardState> {
   private width: number;
   private height: number;
+  private socket: WebSocket;
 
   constructor(props: BoardProps) {
     super(props);
 
-    this.width = 10;
-    this.height = 10;
+    this.width = 5;
+    this.height = 5;
 
     this.state = { grid: new Grid(this.width, this.height) };
+
+    this.socket = new WebSocket("ws://0.0.0.0:9160");
+
+    this.socket.onopen = () => {
+      console.debug("Соединение установлено.");
+      this.socket.send("N"); // N for New.
+    };
+
+    this.socket.onclose = function(event) {
+      if (event.wasClean) {
+        console.info("Clean close");
+      } else {
+        console.error("Connection was cut");
+      }
+      console.info("Code: " + event.code + " reason: " + event.reason);
+    };
+
+    this.socket.onmessage = (event) => {
+      console.info(event.data);
+
+      this.setState({ grid: this.state.grid.refresh(event.data) });
+    };
+
+    this.socket.onerror = function(error) {
+      console.error("Error " + error);
+    };
+
   }
 
   render() {
@@ -89,8 +117,8 @@ export class Board extends React.Component<BoardProps, BoardState> {
   }
 
   private cellClicked(i: number, j: number): void {
-    this.state.grid.actOn(i, j);
-    this.setState({ grid: this.state.grid });
+    console.log("(" + i + "," + j + ")");
+    this.socket.send("(" + i + "," + j + ")");
   }
 
   private notTaken(i: number, j: number): boolean {
