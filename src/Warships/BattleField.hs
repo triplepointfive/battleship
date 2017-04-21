@@ -1,7 +1,15 @@
-module Warships.BattleField where
+module Warships.BattleField
+( BattleField(..)
+, Grid(..)
+, Cell(..)
+, ShipID(..)
+, ShipState(..)
+, Pos
+, attack
+, getCell
+) where
 
 import qualified Data.Map.Strict as Map
-import Data.List (intercalate)
 
 import Control.Monad.State
 
@@ -97,31 +105,3 @@ setCell cell pos = onGrid (Map.insert pos cell)
 
 onGrid :: (Grid -> Grid) -> OnBattleField ()
 onGrid f = modify (\ field -> field { grid = f (grid field) })
-
-displayField :: BattleField -> IO ()
-displayField bf = putStrLn mapp
-  where
-    mapp = intercalate "\n" [ intercalate "" [ sc $ getCell (x, y) bf | x <- [0..width bf - 1] ] | y <- [0..height bf - 1] ]
-    sc Empty            = "."
-    sc Miss             = "•"
-    sc (Ship Hidden _)  = "□"
-    sc (Ship Injured _) = "■"
-    sc (Ship Killed _)  = "x"
-
-tF :: BattleField
-tF = BattleField 5 5 g2 s2
-  where
-    s2 = Map.fromList
-      [ (ShipID 1, 1)
-      , (ShipID 2, 1)
-      , (ShipID 3, 2)
-      ]
-    g2 = Map.fromList
-      [ ((0,0), Miss)
-      , ((3,1), Ship Hidden  (ShipID 1))
-      , ((3,3), Ship Injured (ShipID 2))
-      , ((3,4), Ship Hidden  (ShipID 2))
-      , ((1,1), Ship Hidden  (ShipID 3))
-      , ((1,2), Ship Injured (ShipID 3))
-      , ((1,3), Ship Hidden  (ShipID 3))
-      ]
