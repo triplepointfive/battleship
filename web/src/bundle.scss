@@ -28,7 +28,10 @@ table.battlefield {
 
       &.ship-hit {
         background-color: $ship-hit-background;
-        content: " \2219 ";
+      }
+
+      &.ship-kill {
+        background-color: orangered;
       }
 
       &.miss, &.ship-hit {

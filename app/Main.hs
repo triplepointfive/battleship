@@ -33,7 +33,7 @@ addClient :: Client -> ServerState -> ServerState
 addClient client state = state { clients = client : clients state }
 
 removeClient :: Client -> ServerState -> ServerState
-removeClient client = id -- filter (/= client)
+removeClient client (ServerState _ f) = ServerState [] f
 
 broadcast :: Text -> ServerState -> IO ()
 broadcast message state = do
@@ -51,7 +51,6 @@ application state pending = do
     WS.forkPingThread client 30
 
     msg <- WS.receiveData client :: IO T.Text
-    clients <- liftIO $ readMVar state
     let disconnect = do
           -- Remove client and return new state
           s <- modifyMVar state $ \s ->
@@ -63,7 +62,7 @@ application state pending = do
             let s' = addClient client s
             -- WS.sendTextData client $ "Welcome! Users: " `mappend` T.intercalate ", " (map fst s)
             -- broadcast (fst client `mappend` " joined") s'
-            broadcast (displayField tF) s'
+            broadcast (displayField (field s)) s'
             return s'
         talk client state
 
@@ -95,15 +94,14 @@ tF = BattleField 5 5 g2 s2
   where
     s2 = Map.fromList
       [ (ShipID 1, 1)
-      , (ShipID 2, 1)
-      , (ShipID 3, 2)
+      , (ShipID 2, 2)
+      , (ShipID 3, 3)
       ]
     g2 = Map.fromList
-      [ ((0,0), Miss)
-      , ((3,0), Ship Hidden  (ShipID 1))
-      , ((3,3), Ship Injured (ShipID 2))
-      , ((3,4), Ship Hidden  (ShipID 2))
-      , ((1,1), Ship Hidden  (ShipID 3))
-      , ((1,2), Ship Injured (ShipID 3))
-      , ((1,3), Ship Hidden  (ShipID 3))
+      [ ((3,0), Ship Hidden (ShipID 1))
+      , ((3,3), Ship Hidden (ShipID 2))
+      , ((3,4), Ship Hidden (ShipID 2))
+      , ((1,1), Ship Hidden (ShipID 3))
+      , ((1,2), Ship Hidden (ShipID 3))
+      , ((1,3), Ship Hidden (ShipID 3))
       ]

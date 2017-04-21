@@ -82,6 +82,14 @@ export class Board extends React.Component<BoardProps, BoardState> {
             if (this.notTaken(i + 1, j)) { style += " ship-border-bottom"; }
             if (this.notTaken(i - 1, j)) { style += " ship-border-top"; }
             break;
+          case CellState.Kill:
+            style = "ship-kill";
+
+            if (this.notTaken(i, j + 1)) { style += " ship-border-right"; }
+            if (this.notTaken(i, j - 1)) { style += " ship-border-left"; }
+            if (this.notTaken(i + 1, j)) { style += " ship-border-bottom"; }
+            if (this.notTaken(i - 1, j)) { style += " ship-border-top"; }
+            break;
 
           case CellState.Miss:
             style = "miss";

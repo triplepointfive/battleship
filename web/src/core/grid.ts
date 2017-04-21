@@ -36,7 +36,7 @@ export class Grid {
           cell = CellState.Kill;
           break;
         default:
-          throw "Unknown cell type: " + grid[k];
+          console.error("Unknown cell type: " + grid[k]);
       }
 
       let i = Math.trunc(k / this.height);
@@ -56,17 +56,6 @@ export class Grid {
     }
 
     return this;
-  }
-
-  public actOn(i: number, j: number): void {
-    switch (this.grid[i][j]) {
-      case CellState.Empty:
-        this.grid[i][j] = CellState.Miss;
-        break;
-      case CellState.HasShip:
-        this.grid[i][j] = CellState.Hit;
-        break;
-    }
   }
 
   public getCellState(i: number, j: number): CellState {
