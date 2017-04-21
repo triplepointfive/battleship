@@ -60,8 +60,6 @@ application state pending = do
     flip finally disconnect $ do
         liftIO $ modifyMVar_ state $ \s -> do
             let s' = addClient client s
-            -- WS.sendTextData client $ "Welcome! Users: " `mappend` T.intercalate ", " (map fst s)
-            -- broadcast (fst client `mappend` " joined") s'
             broadcast (displayField (field s)) s'
             return s'
         talk client state
@@ -90,7 +88,7 @@ displayField bf = T.intercalate "" [ T.intercalate "" [ sc $ getCell (x, y) bf |
     sc (Ship Killed _)  = "K"
 
 tF :: BattleField
-tF = BattleField 5 5 g2 s2
+tF = BattleField 10 10 g2 s2
   where
     s2 = Map.fromList
       [ (ShipID 1, 1)

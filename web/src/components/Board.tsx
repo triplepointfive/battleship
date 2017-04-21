@@ -13,8 +13,8 @@ export class Board extends React.Component<BoardProps, BoardState> {
   constructor(props: BoardProps) {
     super(props);
 
-    this.width = 5;
-    this.height = 5;
+    this.width = 10;
+    this.height = 10;
 
     this.state = { grid: new Grid(this.width, this.height) };
 
