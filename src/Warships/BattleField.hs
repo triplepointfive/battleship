@@ -1,6 +1,6 @@
 module Warships.BattleField
 ( BattleField(..)
-, Grid(..)
+, Grid
 , Cell(..)
 , ShipID(..)
 , ShipState(..)

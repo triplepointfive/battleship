@@ -8,7 +8,7 @@ import qualified Data.Map.Strict as Map
 
 import Warships.BattleField
 
-import Data.List (intercalate)
+import Data.List (intercalate, intersect)
 
 data Direction = Horizontal | Vertical
   deriving (Show, Eq)
@@ -35,19 +35,36 @@ generateField = evalState buildField
 buildField :: Rnd BattleField
 buildField = foldM addShip emptyField fieldShips
 
-addShip :: BattleField -> RawShip -> Rnd BattleField
-addShip field@BattleField{..} ship = do
-  pos <- newPosition ship
+addShip :: BattleField -> Int -> Rnd BattleField
+addShip field@BattleField{..} shipLength = do
+  pos <- newPosition shipLength
   dir <- newDirection
+  shipID <- newShipID
 
-  return $ field { grid = insertShip grid (produceShip pos dir ship) }
+  let ship = produceShip pos dir shipLength
 
-insertShip :: Grid -> [Pos] -> Grid
-insertShip = foldl (\grid p -> Map.insert p (Ship Hidden (ShipID 0)) grid)
+  if ship `intersects` grid
+     then addShip field shipLength
+     else return $ field
+            { grid  = insertShip shipID grid ship
+            , ships = Map.insert shipID shipLength ships
+            }
 
-produceShip :: Pos -> Direction -> RawShip -> [Pos]
-produceShip pos Horizontal ship = take ship $ iterate (\(x,y) -> (x + 1, y)) pos
-produceShip pos Vertical   ship = take ship $ iterate (\(x,y) -> (x, y + 1)) pos
+intersects :: [Pos] -> Grid -> Bool
+intersects positions grid = not $ null $ intersect withAdjust (Map.keys grid)
+  where
+    withAdjust = positions ++ concatMap adjustPositions positions
+
+
+newShipID :: Rnd ShipID
+newShipID = ShipID . fst . random <$> withSeed
+
+insertShip :: ShipID -> Grid -> [Pos] -> Grid
+insertShip shipID = foldl (\grid p -> Map.insert p (Ship Hidden shipID) grid)
+
+produceShip :: Pos -> Direction -> Int -> [Pos]
+produceShip pos Horizontal shipLength = take shipLength $ iterate (\(x,y) -> (x + 1, y)) pos
+produceShip pos Vertical   shipLength = take shipLength $ iterate (\(x,y) -> (x, y + 1)) pos
 
 emptyField :: BattleField
 emptyField = BattleField 10 10 Map.empty Map.empty
@@ -55,18 +72,16 @@ emptyField = BattleField 10 10 Map.empty Map.empty
 newDirection :: Rnd Direction
 newDirection = (fst . random) <$> withSeed
 
-newPosition :: RawShip -> Rnd Pos
-newPosition ship = do
-  a <- fst . randomR (0, 10 - ship) <$> withSeed
-  b <- fst . randomR (0, 10 - ship) <$> withSeed
+newPosition :: Int -> Rnd Pos
+newPosition shipLength = do
+  a <- fst . randomR (0, 10 - shipLength) <$> withSeed
+  b <- fst . randomR (0, 10 - shipLength) <$> withSeed
   return (a, b)
 
 withSeed :: Rnd StdGen
 withSeed = modify (snd . next) >> get
 
-type RawShip = Int
-
-fieldShips :: [RawShip]
+fieldShips :: [Int]
 fieldShips = [4, 3, 3, 2, 2, 2, 1, 1, 1, 1]
 
 displayField :: BattleField -> String
