@@ -7,6 +7,7 @@ module Warships.BattleField
 , Pos
 , attack
 , getCell
+, adjustPositions
 ) where
 
 import qualified Data.Map.Strict as Map
