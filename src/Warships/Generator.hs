@@ -1,5 +1,7 @@
 {-# LANGUAGE RecordWildCards #-}
-module Warships.Generator where
+module Warships.Generator
+( brandNewField
+) where
 
 import Control.Monad.State
 import System.Random
@@ -29,6 +31,9 @@ fieldValid BattleField{..} = gridBoundariesValid
     gridBoundariesValid = all inRange (Map.keys grid)
       where inRange (x, y) = x >= 0 && y >= 0 && x < height && y < width
 
+brandNewField :: IO BattleField
+brandNewField = generateField . mkStdGen <$> randomIO
+
 generateField :: StdGen -> BattleField
 generateField = evalState buildField
 
@@ -54,7 +59,6 @@ intersects :: [Pos] -> Grid -> Bool
 intersects positions grid = not $ null $ intersect withAdjust (Map.keys grid)
   where
     withAdjust = positions ++ concatMap adjustPositions positions
-
 
 newShipID :: Rnd ShipID
 newShipID = ShipID . fst . random <$> withSeed
@@ -83,12 +87,3 @@ withSeed = modify (snd . next) >> get
 
 fieldShips :: [Int]
 fieldShips = [4, 3, 3, 2, 2, 2, 1, 1, 1, 1]
-
-displayField :: BattleField -> String
-displayField bf = intercalate "\n" [ intercalate "" [ sc $ getCell (x, y) bf | y <- [0..height bf - 1] ] | x <- [0..width bf - 1] ]
-  where
-    sc Empty            = " "
-    sc Miss             = "."
-    sc (Ship Hidden _)  = "H"
-    sc (Ship Injured _) = "I"
-    sc (Ship Killed _)  = "K"

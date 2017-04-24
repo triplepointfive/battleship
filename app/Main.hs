@@ -14,6 +14,7 @@ import qualified Data.Text.IO as T
 import qualified Network.WebSockets as WS
 
 import Warships.BattleField
+import Warships.Generator (brandNewField)
 
 type Client = WS.Connection
 
@@ -26,8 +27,8 @@ data ServerState
   , field :: !BattleField
   }
 
-newServerState :: ServerState
-newServerState = ServerState [] tF
+newServerState :: BattleField -> ServerState
+newServerState = ServerState []
 
 addClient :: Client -> ServerState -> ServerState
 addClient client state = state { clients = client : clients state }
@@ -42,7 +43,8 @@ broadcast message state = do
 
 main :: IO ()
 main = do
-    state <- newMVar newServerState
+    field <- brandNewField
+    state <- newMVar (newServerState field)
     WS.runServer "0.0.0.0" 9160 $ application state
 
 application :: MVar ServerState -> WS.ServerApp
@@ -86,20 +88,3 @@ displayField bf = T.intercalate "" [ T.intercalate "" [ sc $ getCell (x, y) bf |
     sc (Ship Hidden _)  = "H"
     sc (Ship Injured _) = "I"
     sc (Ship Killed _)  = "K"
-
-tF :: BattleField
-tF = BattleField 10 10 g2 s2
-  where
-    s2 = Map.fromList
-      [ (ShipID 1, 1)
-      , (ShipID 2, 2)
-      , (ShipID 3, 3)
-      ]
-    g2 = Map.fromList
-      [ ((3,0), Ship Hidden (ShipID 1))
-      , ((3,3), Ship Hidden (ShipID 2))
-      , ((3,4), Ship Hidden (ShipID 2))
-      , ((1,1), Ship Hidden (ShipID 3))
-      , ((1,2), Ship Hidden (ShipID 3))
-      , ((1,3), Ship Hidden (ShipID 3))
-      ]
