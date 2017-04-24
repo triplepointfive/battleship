@@ -72,9 +72,17 @@ talk conn state = forever $ do
     s' <- readMVar state
     let f' = attack (read msg) (field s')
 
-    modifyMVar_ state $ \s -> return $ s { field = f' }
+    if gameComplete f'
+      then do
+        f'' <- brandNewField
+        modifyMVar_ state $ \s -> return $ s { field = f'' }
+      else
+        modifyMVar_ state $ \s -> return $ s { field = f' }
 
     liftIO $ readMVar state >>= broadcastField
+
+gameComplete :: BattleField -> Bool
+gameComplete = all (==0) . Map.elems . ships
 
 broadcastField :: ServerState -> IO ()
 broadcastField state@(ServerState _ field) =
