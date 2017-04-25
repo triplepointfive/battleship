@@ -2,8 +2,9 @@ import * as React from "react";
 import * as ReactDOM from "react-dom";
 
 import { Board } from "./components/Board";
+import { MainMenu } from "./components/MainMenu";
 
 ReactDOM.render(
-    <Board compiler="a" framework="b" />,
-    document.getElementById("example")
+  <MainMenu/>,
+  document.getElementById("container")
 );
