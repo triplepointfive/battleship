@@ -1,5 +1,52 @@
 import * as React from "react";
 
+interface JoinGameDialogState { gameID: string; error: string; }
+
+class JoinGameDialog extends React.Component<null, JoinGameDialogState> {
+  constructor() {
+    super();
+
+    this.state = { gameID: "", error: "" };
+  }
+
+  render() {
+    let errorMessage = null;
+
+    if (this.state.error.length) {
+      errorMessage = <div className="form-control-feedback">
+          {this.state.error}
+          </div>;
+    }
+
+    return <form onSubmit={e => this.sendRequest(e)}>
+        <div className="form-group has-danger">
+          <div className="input-group">
+            <input type="text" value={this.state.gameID} className="form-control" placeholder="Game ID" onChange={e => this.handleChange(e)}/>
+            <span className="input-group-btn">
+              <button disabled={!this.state.gameID.length} className="btn btn-secondary btn-outline-danger" type="button">
+                Join!
+              </button>
+            </span>
+          </div>
+          {errorMessage}
+        </div>
+      </form>;
+  }
+
+  private handleChange(event: React.FormEvent<HTMLInputElement>): void {
+    this.setState({ gameID: event.currentTarget.value });
+  }
+
+  private sendRequest(event: React.FormEvent<HTMLFormElement>) {
+    event.preventDefault();
+    if (!this.state.gameID.length) {
+      return;
+    }
+    console.log(this.state.gameID);
+    this.setState({ error: this.state.gameID });
+  }
+}
+
 interface MainMenuState { screen: string; }
 
 export class MainMenu extends React.Component<null, MainMenuState> {
@@ -32,12 +79,7 @@ export class MainMenu extends React.Component<null, MainMenuState> {
           <a href="#" className="btn btn-primary">Start new game</a>
         </div>
         <div className="col-md-6">
-          <div className="input-group">
-            <input type="text" className="form-control" placeholder="Game ID"/>
-            <span className="input-group-btn">
-              <button className="btn btn-secondary" type="button">Join!</button>
-            </span>
-          </div>
+          <JoinGameDialog />
         </div>
       </div>;
   }
