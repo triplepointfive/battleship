@@ -1,5 +1,7 @@
 import * as React from "react";
 
+import { Server } from "../core/server";
+
 interface JoinGameDialogState { gameID: string; error: string; }
 
 class JoinGameDialog extends React.Component<null, JoinGameDialogState> {
@@ -68,8 +70,12 @@ class JoinGameDialog extends React.Component<null, JoinGameDialogState> {
 interface MainMenuState { screen: string; }
 
 export class MainMenu extends React.Component<null, MainMenuState> {
+  private server: Server;
+
   constructor() {
     super();
+
+    this.server = new Server;
 
     this.state = { screen: "main" };
   }
@@ -94,11 +100,16 @@ export class MainMenu extends React.Component<null, MainMenuState> {
   private mainScreen() {
     return <div className="row">
         <div className="col-md-6">
-          <a href="#" className="btn btn-primary">Start new game</a>
+          <a href="#" onClick={e => this.onLinkClick(e) } className="btn btn-primary">Start new game</a>
         </div>
         <div className="col-md-6">
           <JoinGameDialog />
         </div>
       </div>;
+  }
+
+  private onLinkClick(event: React.FormEvent<HTMLAnchorElement>): void {
+    event.preventDefault();
+    this.server.newGame((id) => { console.log(id); });
   }
 }

@@ -18,9 +18,6 @@ import Warships.Generator (brandNewField)
 
 type Client = WS.Connection
 
-instance Eq WS.Connection where
-  _ == _ = False
-
 data ServerState
   = ServerState
   { clients :: ![Client]
@@ -95,20 +92,28 @@ application state pending = do
             return s'
         talk client state
 
+broadcastMessage :: OutputMessage -> ServerState -> IO ()
+broadcastMessage m = broadcast (T.pack $ show m)
+
 talk :: WS.Connection -> MVar ServerState -> IO ()
 talk conn state = forever $ do
     msg <- T.unpack <$> WS.receiveData conn :: IO String
     s' <- readMVar state
-    let f' = attack (read msg) (field s')
+    print msg
+    case msg of
+      "NewGame" ->
+        broadcastMessage (NewGameID 123) s'
+      _ -> do
+        let f' = attack (read msg) (field s')
 
-    if gameComplete f'
-      then do
-        f'' <- brandNewField
-        modifyMVar_ state $ \s -> return $ s { field = f'' }
-      else
-        modifyMVar_ state $ \s -> return $ s { field = f' }
+        if gameComplete f'
+          then do
+            f'' <- brandNewField
+            modifyMVar_ state $ \s -> return $ s { field = f'' }
+          else
+            modifyMVar_ state $ \s -> return $ s { field = f' }
 
-    liftIO $ readMVar state >>= broadcastField
+        liftIO $ readMVar state >>= broadcastField
 
 gameComplete :: BattleField -> Bool
 gameComplete = all (==0) . Map.elems . ships
