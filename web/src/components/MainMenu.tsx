@@ -18,7 +18,7 @@ class JoinGameDialog extends React.Component<null, JoinGameDialogState> {
           </div>;
     }
 
-    return <form onSubmit={e => this.sendRequest(e)}>
+    return <form onSubmit={e => this.onSubmit(e)}>
         <div className="form-group has-danger">
           <div className="input-group">
             <input type="text" value={this.state.gameID} className="form-control" placeholder="Game ID" onChange={e => this.handleChange(e)}/>
@@ -37,8 +37,12 @@ class JoinGameDialog extends React.Component<null, JoinGameDialogState> {
     this.setState({ gameID: event.currentTarget.value });
   }
 
-  private sendRequest(event: React.FormEvent<HTMLFormElement>) {
+  private onSubmit(event: React.FormEvent<HTMLFormElement>) {
     event.preventDefault();
+    this.sendRequest();
+  }
+
+  private sendRequest(): void {
     if (!this.state.gameID.length) {
       return;
     }
