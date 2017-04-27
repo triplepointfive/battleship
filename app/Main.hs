@@ -27,6 +27,35 @@ data ServerState
   , field :: !BattleField
   }
 
+type GameID = Int
+type PlayerID = Int
+
+-- | All messages that server can `broadcast` to clients.
+data OutputMessage
+  -- | Returns when a user searches for a game with specific ID, but it can't be found.
+  = NotFoundGameID
+  -- | Found game already has two players.
+  | NoFreeSlots
+  -- | User initialized new game and this is its ID.
+  | NewGameID GameID
+  -- | User joined a game and received their ID.
+  | PlayerID PlayerID
+  deriving Eq
+
+instance Show OutputMessage where
+  show NotFoundGameID  = "NFDGID"
+  show NoFreeSlots     = "NFS"
+  show (NewGameID gID) = "NGID " ++ show gID
+  show (PlayerID pID)  = "PID " ++ show pID
+
+-- | All messages that server accepts.
+data IntputMessage
+  -- | User initializes new game.
+  = NewGame
+  -- | User joins an existing game.
+  | JoinGame GameID
+  deriving (Read, Show, Eq)
+
 newServerState :: BattleField -> ServerState
 newServerState = ServerState []
 
