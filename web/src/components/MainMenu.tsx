@@ -12,18 +12,23 @@ class JoinGameDialog extends React.Component<null, JoinGameDialogState> {
   render() {
     let errorMessage = null;
 
-    if (this.state.error.length) {
+    let formClass = "form-group" ;
+    let buttonClass = "btn btn-secondary";
+
+    if (this.hasError()) {
       errorMessage = <div className="form-control-feedback">
           {this.state.error}
           </div>;
+      formClass += " has-danger";
+      buttonClass += " btn-outline-danger";
     }
 
     return <form onSubmit={e => this.onSubmit(e)}>
-        <div className="form-group has-danger">
+        <div className={formClass}>
           <div className="input-group">
             <input type="text" value={this.state.gameID} className="form-control" placeholder="Game ID" onChange={e => this.handleChange(e)}/>
             <span className="input-group-btn">
-              <button disabled={!this.state.gameID.length} className="btn btn-secondary btn-outline-danger" type="button">
+              <button disabled={!this.state.gameID.length} className={buttonClass} type="button" onClick={e => this.onButtonClick(e) }>
                 Join!
               </button>
             </span>
@@ -37,9 +42,18 @@ class JoinGameDialog extends React.Component<null, JoinGameDialogState> {
     this.setState({ gameID: event.currentTarget.value });
   }
 
+  private onButtonClick(event: React.FormEvent<HTMLButtonElement>) {
+    event.preventDefault();
+    this.sendRequest();
+  }
+
   private onSubmit(event: React.FormEvent<HTMLFormElement>) {
     event.preventDefault();
     this.sendRequest();
+  }
+
+  private hasError(): boolean {
+    return !!this.state.error.length;
   }
 
   private sendRequest(): void {
