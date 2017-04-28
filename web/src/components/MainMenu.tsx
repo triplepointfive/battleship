@@ -1,6 +1,8 @@
 import * as React from "react";
 
 import { Server } from "../core/server";
+import { Board } from "./Board";
+import { Grid } from "../core/grid";
 
 interface JoinGameDialogState { gameID: string; error: string; }
 
@@ -67,7 +69,7 @@ class JoinGameDialog extends React.Component<null, JoinGameDialogState> {
   }
 }
 
-interface MainMenuState { screen: string; }
+interface MainMenuState { screen: string; gameID?: string; field: Grid; }
 
 export class MainMenu extends React.Component<null, MainMenuState> {
   private server: Server;
@@ -75,20 +77,40 @@ export class MainMenu extends React.Component<null, MainMenuState> {
   constructor() {
     super();
 
-    this.server = new Server;
+    this.server = new Server(
+      e => { this.setGameID(e); },
+      e => { this.setOwnField(e); }
+    );
 
-    this.state = { screen: "main" };
+    this.state = { screen: "main", field: new Grid(10, 10) };
   }
 
   render() {
-    return <div className="card">
-        <div className="card-header">
-          Battleship
+    return <div className="row mt-3 row-eq-height">
+      <div className="col-md-6">
+        <div className="card">
+          <div className="card-header">
+            Your field
+            <div className="float-right">
+              {this.state.gameID}
+            </div>
+          </div>
+          <div className="card-block">
+            <Board grid={this.state.field}/>
+          </div>
         </div>
-        <div className="card-block">
-          {this.currentScreen()}
+      </div>
+      <div className="col-md-6">
+        <div className="card">
+          <div className="card-header">
+            Enemy's field
+          </div>
+          <div className="card-block">
+            {this.currentScreen()}
+          </div>
         </div>
-      </div>;
+      </div>
+    </div>;
   }
 
   private currentScreen() {
@@ -100,7 +122,7 @@ export class MainMenu extends React.Component<null, MainMenuState> {
   private mainScreen() {
     return <div className="row">
         <div className="col-md-6">
-          <a href="#" onClick={e => this.onLinkClick(e) } className="btn btn-primary">Start new game</a>
+          <a href="#" className="btn btn-primary">Start new game</a>
         </div>
         <div className="col-md-6">
           <JoinGameDialog />
@@ -108,8 +130,11 @@ export class MainMenu extends React.Component<null, MainMenuState> {
       </div>;
   }
 
-  private onLinkClick(event: React.FormEvent<HTMLAnchorElement>): void {
-    event.preventDefault();
-    this.server.newGame((id) => { console.log(id); });
+  private setGameID(gameID: string): void {
+    this.setState({ gameID: gameID });
+  }
+
+  private setOwnField(field: string): void {
+    this.setState({ field: this.state.field.refresh(field) });
   }
 }

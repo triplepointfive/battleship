@@ -3,6 +3,19 @@ $ship-border-color: #284BC0;
 
 $ship-hit-background: pink;
 
+.row-eq-height {
+  display:  -webkit-box;
+  display: -webkit-flex;
+  display:  -ms-flexbox;
+  display:         flex;
+
+  .col-md-6 {
+    .card {
+      height: 100%;
+    }
+  }
+}
+
 table.battlefield {
   tr {
     th, td {

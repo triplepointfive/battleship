@@ -2,13 +2,11 @@ import * as React from "react";
 
 import { Grid, CellState } from "../core/grid";
 
-interface BoardProps { compiler: string; framework: string; }
-interface BoardState { grid: Grid; }
+interface BoardProps { grid: Grid; }
 
-export class Board extends React.Component<BoardProps, BoardState> {
+export class Board extends React.Component<BoardProps, null> {
   private width: number;
   private height: number;
-  private socket: WebSocket;
 
   constructor(props: BoardProps) {
     super(props);
@@ -16,34 +14,11 @@ export class Board extends React.Component<BoardProps, BoardState> {
     this.width = 10;
     this.height = 10;
 
-    this.state = { grid: new Grid(this.width, this.height) };
+    // this.socket.onmessage = (event) => {
+      // console.info(event.data);
 
-    this.socket = new WebSocket("ws://0.0.0.0:9160");
-
-    this.socket.onopen = () => {
-      console.debug("Соединение установлено.");
-      this.socket.send("N"); // N for New.
-    };
-
-    this.socket.onclose = function(event) {
-      if (event.wasClean) {
-        console.info("Clean close");
-      } else {
-        console.error("Connection was cut");
-      }
-      console.info("Code: " + event.code + " reason: " + event.reason);
-    };
-
-    this.socket.onmessage = (event) => {
-      console.info(event.data);
-
-      this.setState({ grid: this.state.grid.refresh(event.data) });
-    };
-
-    this.socket.onerror = function(error) {
-      console.error("Error " + error);
-    };
-
+      // this.setState({ grid: this.state.grid.refresh(event.data) });
+    // };
   }
 
   render() {
@@ -59,7 +34,7 @@ export class Board extends React.Component<BoardProps, BoardState> {
       let row = [];
 
       for (let j = 0; j < this.width; j++) {
-        const state: CellState = this.state.grid.getCellState(i, j);
+        const state: CellState = this.props.grid.getCellState(i, j);
 
         let style: string = "";
         let content: string = "";
@@ -113,9 +88,6 @@ export class Board extends React.Component<BoardProps, BoardState> {
     }
 
     return <div>
-      <h1>
-        from {this.props.compiler} and {this.props.framework}!
-      </h1>
       <table className="battlefield table table-sm">
         <tbody>
           {grid}
@@ -126,11 +98,11 @@ export class Board extends React.Component<BoardProps, BoardState> {
 
   private cellClicked(i: number, j: number): void {
     console.log("(" + i + "," + j + ")");
-    this.socket.send("(" + i + "," + j + ")");
+    // this.socket.send("(" + i + "," + j + ")");
   }
 
   private notTaken(i: number, j: number): boolean {
-    const state: CellState = this.state.grid.getCellState(i, j);
+    const state: CellState = this.props.grid.getCellState(i, j);
     return state === CellState.Miss || state === CellState.Empty;
   }
 

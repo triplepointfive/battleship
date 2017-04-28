@@ -62,9 +62,7 @@ export class Grid {
     if (i < 0 || j < 0 || i >= this.width || j >= this.height) {
       return CellState.Empty;
     } else {
-      let state: CellState = this.grid[i][j];
-
-      return CellState.HasShip === state ? CellState.Empty : state;
+      return this.grid[i][j];
     }
   }
 }

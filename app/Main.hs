@@ -1,3 +1,4 @@
+{-# LANGUAGE RecordWildCards #-}
 {-# LANGUAGE OverloadedStrings #-}
 -- import Data.Char (isPunctuation, isSpace)
 -- import Data.List (intercalate)
@@ -18,16 +19,24 @@ import System.Random (randomIO)
 import Warships.BattleField
 import Warships.Generator (brandNewField)
 
-type Client = WS.Connection
+type PlayerID = Int
+
+instance Show WS.Connection where
+  show _ = "Connection"
+
+data Player
+  = Player
+  { connection :: !WS.Connection
+  , field      :: !BattleField
+  } deriving Show
+
+type GameID = Int
 
 data ServerState
   = ServerState
-  { clients :: ![Client]
-  , field :: !BattleField
-  }
-
-type GameID = Int
-type PlayerID = Int
+  { clients :: !(Map.Map PlayerID Player)
+  , games   :: !(Map.Map GameID ())
+  } deriving Show
 
 -- | All messages that server can `broadcast` to clients.
 data OutputMessage
@@ -53,78 +62,93 @@ data IntputMessage
   = NewGame
   -- | User joins an existing game.
   | JoinGame GameID
+  -- | User attacks enemy's field.
+  | Attack
   deriving (Read, Show, Eq)
 
-newServerState :: BattleField -> ServerState
-newServerState = ServerState []
+newServerState :: ServerState
+newServerState = ServerState Map.empty Map.empty
 
-addClient :: Client -> ServerState -> ServerState
-addClient client state = state { clients = client : clients state }
+addClient :: PlayerID -> Player -> ServerState -> ServerState
+addClient pID player state
+  = state { clients = Map.insert pID player (clients state) }
 
-removeClient :: Client -> ServerState -> ServerState
-removeClient client (ServerState _ f) = ServerState [] f
+removeClient :: PlayerID -> ServerState -> ServerState
+removeClient pID s = s { clients = Map.delete pID (clients s) }
 
 broadcast :: Text -> ServerState -> IO ()
-broadcast message state = do
-    T.putStrLn message
-    forM_ (clients state) (`WS.sendTextData` message)
+broadcast message ServerState{..} = do
+  T.putStrLn message
+  forM_ (map connection $ Map.elems clients) (`WS.sendTextData` message)
 
 main :: IO ()
 main = do
-    field <- brandNewField
-    state <- newMVar (newServerState field)
-    WS.runServer "0.0.0.0" 9160 $ application state
+  state <- newMVar newServerState
+  WS.runServer "0.0.0.0" 9160 $ application state
 
 application :: MVar ServerState -> WS.ServerApp
 application state pending = do
     client <- WS.acceptRequest pending
+    pID <- randomIO
     WS.forkPingThread client 30
 
     msg <- WS.receiveData client :: IO T.Text
-    let disconnect = do
-          -- Remove client and return new state
-          s <- modifyMVar state $ \s ->
-              let s' = removeClient client s in return (s', s')
-          broadcast " disconnected" s
+    let disconnect = modifyMVar_ state $ \s -> return (removeClient pID s)
 
     flip finally disconnect $ do
-        liftIO $ modifyMVar_ state $ \s -> return (addClient client s)
-        talk client state
+      liftIO $ modifyMVar_ state $ \s -> do
+        field <- brandNewField
+        return (addClient pID (Player client field) s)
+      s <- readMVar state
+      print s
+      broadcastPlayer s pID
+      talk pID client state
 
 broadcastMessage :: OutputMessage -> ServerState -> IO ()
 broadcastMessage m = broadcast (T.pack $ show m)
 
-talk :: WS.Connection -> MVar ServerState -> IO ()
-talk conn state = forever $ do
+broadcastPlayer :: ServerState -> PlayerID -> IO ()
+broadcastPlayer ServerState{..} pID =
+  case Map.lookup pID clients of
+    Just Player{..} -> do
+      WS.sendTextData connection (T.pack $ "PID " ++ show pID)
+      WS.sendTextData connection (T.concat ["OWN ", displayOwnField field])
+    Nothing -> return ()
+
+talk :: PlayerID -> WS.Connection -> MVar ServerState -> IO ()
+talk pID conn state = forever $ do
     msg <- T.unpack <$> WS.receiveData conn :: IO String
     s' <- readMVar state
     print msg
-    case msg of
-      "NewGame" -> do
+    print s'
+    case read msg of
+      NewGame -> do
         gameID <- randomIO
+        modifyMVar_ state $ \s -> return $ s { games = Map.insert gameID () (games s) }
         broadcastMessage (NewGameID gameID) s'
-      "Attack" -> do
-        let f' = attack (read msg) (field s')
+      -- JoinGame gameID -> do
+        -- return ()
+      -- Attack -> do
+        -- let f' = attack (read msg) (field s')
 
-        if gameComplete f'
-          then do
-            f'' <- brandNewField
-            modifyMVar_ state $ \s -> return $ s { field = f'' }
-          else
-            modifyMVar_ state $ \s -> return $ s { field = f' }
+        -- if gameComplete f'
+          -- then do
+            -- f'' <- brandNewField
+            -- modifyMVar_ state $ \s -> return $ s { field = f'' }
+          -- else
+            -- modifyMVar_ state $ \s -> return $ s { field = f' }
 
-        liftIO $ readMVar state >>= broadcastField
-      _ -> print ("Can't process message '" ++ msg ++ "'")
+        -- liftIO $ readMVar state >>= broadcastField
 
 gameComplete :: BattleField -> Bool
 gameComplete = all (==0) . Map.elems . ships
 
-broadcastField :: ServerState -> IO ()
-broadcastField state@(ServerState _ field) =
-  broadcast (displayField field) state
+-- broadcastField :: ServerState -> IO ()
+-- broadcastField state@ServerState{..} =
+  -- broadcast (displayField field) state
 
-displayField :: BattleField -> T.Text
-displayField bf = T.intercalate "" [ T.intercalate "" [ sc $ getCell (x, y) bf | y <- [0..height bf - 1] ] | x <- [0..width bf - 1] ]
+displayOwnField :: BattleField -> T.Text
+displayOwnField bf = T.intercalate "" [ T.intercalate "" [ sc $ getCell (x, y) bf | y <- [0..height bf - 1] ] | x <- [0..width bf - 1] ]
   where
     sc Empty            = "E"
     sc Miss             = "M"

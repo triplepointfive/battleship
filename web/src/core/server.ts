@@ -2,18 +2,15 @@ interface OutMessage {
   build(): string;
 }
 
-class NewGameOut implements OutMessage {
-  build(): string { return "NewGame"; }
-}
-
-class NewGameIDIn { constructor(public id: string) {} }
+type Callback = (msg: string) => void;
 
 export class Server {
   private socket: WebSocket;
 
-  private newGameIDInCallback: (msg: NewGameIDIn) => void;
-
-  constructor() {
+  constructor(
+    private playerIDCallback: Callback,
+    private ownCallback: Callback
+  ) {
     this.socket = new WebSocket("ws://0.0.0.0:9160");
 
     this.socket.onopen = () => {
@@ -34,17 +31,15 @@ export class Server {
     this.socket.onerror = (error) => console.error("Error " + error);
   }
 
-  public newGame(callback: (msg: NewGameIDIn) => void): void {
-    this.newGameIDInCallback = callback;
-    this.socket.send((new NewGameOut).build());
-  }
-
   private parseEvent(event: MessageEvent): void {
     const data = event.data.split(" ");
 
     switch (data[0]) {
-      case "NGID":
-        this.newGameIDInCallback(new NewGameIDIn(data[1]));
+      case "PID":
+        this.playerIDCallback(data[1]);
+        break;
+      case "OWN":
+        this.ownCallback(data[1]);
         break;
       default:
         console.error(`Invalid message ${event.data}`);
