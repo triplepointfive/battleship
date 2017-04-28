@@ -6,7 +6,7 @@ class NewGameOut implements OutMessage {
   build(): string { return "NewGame"; }
 }
 
-class NewGameIDIn { constructor(public id: number) {} }
+class NewGameIDIn { constructor(public id: string) {} }
 
 export class Server {
   private socket: WebSocket;
@@ -39,9 +39,15 @@ export class Server {
     this.socket.send((new NewGameOut).build());
   }
 
-  private parseEvent(event: Event): void {
-    if (this.newGameIDInCallback) {
-      this.newGameIDInCallback(new NewGameIDIn(123));
+  private parseEvent(event: MessageEvent): void {
+    const data = event.data.split(" ");
+
+    switch (data[0]) {
+      case "NGID":
+        this.newGameIDInCallback(new NewGameIDIn(data[1]));
+        break;
+      default:
+        console.error(`Invalid message ${event.data}`);
     }
   }
 }

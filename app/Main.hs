@@ -13,6 +13,8 @@ import qualified Data.Text.IO as T
 
 import qualified Network.WebSockets as WS
 
+import System.Random (randomIO)
+
 import Warships.BattleField
 import Warships.Generator (brandNewField)
 
@@ -86,10 +88,7 @@ application state pending = do
           broadcast " disconnected" s
 
     flip finally disconnect $ do
-        liftIO $ modifyMVar_ state $ \s -> do
-            let s' = addClient client s
-            broadcast (displayField (field s)) s'
-            return s'
+        liftIO $ modifyMVar_ state $ \s -> return (addClient client s)
         talk client state
 
 broadcastMessage :: OutputMessage -> ServerState -> IO ()
@@ -101,9 +100,10 @@ talk conn state = forever $ do
     s' <- readMVar state
     print msg
     case msg of
-      "NewGame" ->
-        broadcastMessage (NewGameID 123) s'
-      _ -> do
+      "NewGame" -> do
+        gameID <- randomIO
+        broadcastMessage (NewGameID gameID) s'
+      "Attack" -> do
         let f' = attack (read msg) (field s')
 
         if gameComplete f'
@@ -114,6 +114,7 @@ talk conn state = forever $ do
             modifyMVar_ state $ \s -> return $ s { field = f' }
 
         liftIO $ readMVar state >>= broadcastField
+      _ -> print ("Can't process message '" ++ msg ++ "'")
 
 gameComplete :: BattleField -> Bool
 gameComplete = all (==0) . Map.elems . ships

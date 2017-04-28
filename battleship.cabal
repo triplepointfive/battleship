@@ -35,6 +35,7 @@ executable battleship-exe
                      , containers
                      , text
                      , websockets
+                     , random
   default-language:    Haskell2010
 
 test-suite battleship-test
