@@ -1,1 +1,1 @@
-web: stack exec battleship-exe
+web: battleship-exe
