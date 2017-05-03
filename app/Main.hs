@@ -84,7 +84,7 @@ broadcast message ServerState{..} = do
 main :: IO ()
 main = do
   state <- newMVar newServerState
-  WS.runServer "0.0.0.0" 9160 $ application state
+  WS.runServer "0.0.0.0" 8080 $ application state
 
 application :: MVar ServerState -> WS.ServerApp
 application state pending = do
