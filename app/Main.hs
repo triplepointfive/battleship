@@ -12,6 +12,9 @@ import Control.Monad.IO.Class (liftIO)
 import qualified Data.Text as T
 import qualified Data.Text.IO as T
 
+import System.Environment (lookupEnv)
+import Data.Maybe (fromMaybe)
+
 import qualified Network.WebSockets as WS
 
 import System.Random (randomIO)
@@ -66,6 +69,11 @@ data IntputMessage
   | Attack
   deriving (Read, Show, Eq)
 
+getEnvWithDefault :: String -> String -> IO String
+getEnvWithDefault name defaultValue = do
+    x <- lookupEnv name
+    return $ fromMaybe defaultValue x
+
 newServerState :: ServerState
 newServerState = ServerState Map.empty Map.empty
 
@@ -84,7 +92,9 @@ broadcast message ServerState{..} = do
 main :: IO ()
 main = do
   state <- newMVar newServerState
-  WS.runServer "0.0.0.0" 80 $ application state
+  port <- read <$> getEnvWithDefault "PORT" "3636" :: IO Int
+  host <- getEnvWithDefault "HOST" "0.0.0.0"
+  WS.runServer host port $ application state
 
 application :: MVar ServerState -> WS.ServerApp
 application state pending = do
