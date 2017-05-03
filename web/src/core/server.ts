@@ -11,7 +11,7 @@ export class Server {
     private playerIDCallback: Callback,
     private ownCallback: Callback
   ) {
-    this.socket = new WebSocket("ws://powerful-headland-52719.herokuapp.com");
+    this.socket = new WebSocket("wss://powerful-headland-52719.herokuapp.com");
 
     this.socket.onopen = () => {
       this.socket.send("");
