@@ -10,7 +10,8 @@ export class Server {
 
   constructor(
     private playerIDCallback: Callback,
-    private ownCallback: Callback
+    private ownCallback: Callback,
+    private enemyCallback: Callback
   ) {
     this.socket = new WebSocket(url);
 
@@ -46,6 +47,9 @@ export class Server {
         break;
       case "Own":
         this.ownCallback(data[1]);
+        break;
+      case "Enemy":
+        this.enemyCallback(data[1]);
         break;
       case "NotFoundGameID":
         this.gameJoinErrorCallback(data[0]);

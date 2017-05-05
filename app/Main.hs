@@ -13,7 +13,7 @@ import qualified Data.Text as T
 import qualified Data.Text.IO as T
 
 import System.Environment (lookupEnv)
-import Data.Maybe (fromMaybe)
+import Data.Maybe (fromMaybe, fromJust)
 import Data.List (intercalate)
 
 import qualified Network.WebSockets as WS
@@ -50,6 +50,7 @@ data OutputMessage
   -- | User joined a game and received their ID.
   | PlayerID PlayerID
   | Own BattleField
+  | Enemy BattleField
   deriving Eq
 
 instance Show OutputMessage where
@@ -57,6 +58,7 @@ instance Show OutputMessage where
   show NoFreeSlots = "NoFreeSlots"
   show (PlayerID pID) = "PlayerID " ++ show pID
   show (Own bf) = "Own " ++ displayOwnField bf
+  show (Enemy bf) = "Enemy " ++ displayEnemysField bf
 
 -- | All messages that server accepts.
 data IntputMessage
@@ -136,9 +138,11 @@ talk pID conn state = forever $ do
         -- gameID <- randomIO
         -- modifyMVar_ state $ \s -> return $ s { games = Map.insert gameID () (games s) }
         -- broadcastMessage (NewGameID gameID) s'
-      JoinGame pID ->
-        case Map.lookup pID (players s') of
-          Just Player{..} -> return ()
+      JoinGame gID ->
+        case Map.lookup gID (players s') of
+          Just (Player c f) -> do
+            broadcastM (Enemy f) conn
+            broadcastM (Enemy (field $ fromJust $ Map.lookup pID (players s'))) c
           Nothing ->
             broadcastM NotFoundGameID conn
 
@@ -162,10 +166,16 @@ talk pID conn state = forever $ do
   -- broadcast (displayField field) state
 
 displayOwnField :: BattleField -> String
-displayOwnField bf = intercalate "" [ intercalate "" [ sc $ getCell (x, y) bf | y <- [0..height bf - 1] ] | x <- [0..width bf - 1] ]
+displayOwnField = displayField "H"
+
+displayEnemysField :: BattleField -> String
+displayEnemysField = displayField "E"
+
+displayField :: String -> BattleField -> String
+displayField hiddenShip bf = intercalate "" [ intercalate "" [ sc $ getCell (x, y) bf | y <- [0..height bf - 1] ] | x <- [0..width bf - 1] ]
   where
     sc Empty            = "E"
     sc Miss             = "M"
-    sc (Ship Hidden _)  = "H"
+    sc (Ship Hidden _)  = hiddenShip
     sc (Ship Injured _) = "I"
     sc (Ship Killed _)  = "K"

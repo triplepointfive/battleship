@@ -8,7 +8,12 @@ import { JoinGameDialog } from "./JoinGameDialog";
 
 enum Screen { JoinGame, EnemyField }
 
-interface MainMenuState { screen: Screen; gameID?: string; ownGrid: Grid; }
+interface MainMenuState {
+  screen: Screen;
+  gameID?: string;
+  ownGrid: Grid;
+  enemyGrid: Grid;
+}
 
 export class MainMenu extends React.Component<null, MainMenuState> {
   private server: Server;
@@ -18,10 +23,15 @@ export class MainMenu extends React.Component<null, MainMenuState> {
 
     this.server = new Server(
       e => { this.setGameID(e); },
-      e => { this.setOwnField(e); }
+      e => { this.setOwnField(e); },
+      e => { this.setEnemyField(e); }
     );
 
-    this.state = { screen: Screen.JoinGame, ownGrid: new Grid(10, 10) };
+    this.state = {
+      screen: Screen.JoinGame,
+      ownGrid: new Grid(10, 10),
+      enemyGrid: new Grid(10, 10)
+    };
   }
 
   render() {
@@ -56,6 +66,8 @@ export class MainMenu extends React.Component<null, MainMenuState> {
     switch (this.state.screen) {
       case Screen.JoinGame:
         return this.joinGameScreen();
+      case Screen.EnemyField:
+        return this.enemysFieldScreen();
     }
   }
 
@@ -70,11 +82,22 @@ export class MainMenu extends React.Component<null, MainMenuState> {
       </div>;
   }
 
+  private enemysFieldScreen() {
+    return <Board grid={this.state.enemyGrid}/>;
+  }
+
   private setGameID(gameID: string): void {
     this.setState({ gameID: gameID });
   }
 
   private setOwnField(grid: string): void {
     this.setState({ ownGrid: this.state.ownGrid.refresh(grid) });
+  }
+
+  private setEnemyField(grid: string): void {
+    this.setState({
+      screen: Screen.EnemyField,
+      ownGrid: this.state.enemyGrid.refresh(grid)
+    });
   }
 }
