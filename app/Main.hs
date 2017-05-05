@@ -14,6 +14,7 @@ import qualified Data.Text.IO as T
 
 import System.Environment (lookupEnv)
 import Data.Maybe (fromMaybe)
+import Data.List (intercalate)
 
 import qualified Network.WebSockets as WS
 
@@ -37,34 +38,30 @@ type GameID = Int
 
 data ServerState
   = ServerState
-  { clients :: !(Map.Map PlayerID Player)
-  , games   :: !(Map.Map GameID ())
+  { players :: !(Map.Map PlayerID Player)
   } deriving Show
 
--- | All messages that server can `broadcast` to clients.
+-- | All messages that server can `broadcast` to players.
 data OutputMessage
   -- | Returns when a user searches for a game with specific ID, but it can't be found.
   = NotFoundGameID
   -- | Found game already has two players.
   | NoFreeSlots
-  -- | User initialized new game and this is its ID.
-  | NewGameID GameID
   -- | User joined a game and received their ID.
   | PlayerID PlayerID
+  | Own BattleField
   deriving Eq
 
 instance Show OutputMessage where
-  show NotFoundGameID  = "NFDGID"
-  show NoFreeSlots     = "NFS"
-  show (NewGameID gID) = "NGID " ++ show gID
-  show (PlayerID pID)  = "PID " ++ show pID
+  show NotFoundGameID = "NotFoundGameID"
+  show NoFreeSlots = "NoFreeSlots"
+  show (PlayerID pID) = "PlayerID " ++ show pID
+  show (Own bf) = "Own " ++ displayOwnField bf
 
 -- | All messages that server accepts.
 data IntputMessage
-  -- | User initializes new game.
-  = NewGame
   -- | User joins an existing game.
-  | JoinGame GameID
+  = JoinGame PlayerID
   -- | User attacks enemy's field.
   | Attack
   deriving (Read, Show, Eq)
@@ -75,31 +72,32 @@ getEnvWithDefault name defaultValue = do
     return $ fromMaybe defaultValue x
 
 newServerState :: ServerState
-newServerState = ServerState Map.empty Map.empty
+newServerState = ServerState Map.empty
 
 addClient :: PlayerID -> Player -> ServerState -> ServerState
 addClient pID player state
-  = state { clients = Map.insert pID player (clients state) }
+  = state { players = Map.insert pID player (players state) }
 
 removeClient :: PlayerID -> ServerState -> ServerState
-removeClient pID s = s { clients = Map.delete pID (clients s) }
+removeClient pID s = s { players = Map.delete pID (players s) }
 
 broadcast :: Text -> ServerState -> IO ()
 broadcast message ServerState{..} = do
   T.putStrLn message
-  forM_ (map connection $ Map.elems clients) (`WS.sendTextData` message)
+  forM_ (map connection $ Map.elems players) (`WS.sendTextData` message)
 
 main :: IO ()
 main = do
   state <- newMVar newServerState
   port <- read <$> getEnvWithDefault "PORT" "3636" :: IO Int
   host <- getEnvWithDefault "HOST" "0.0.0.0"
+  putStrLn ("Running server on " ++ host ++ ":" ++ show port)
   WS.runServer host port $ application state
 
 application :: MVar ServerState -> WS.ServerApp
 application state pending = do
     client <- WS.acceptRequest pending
-    pID <- randomIO
+    pID <- abs <$> randomIO
     WS.forkPingThread client 30
 
     msg <- WS.receiveData client :: IO T.Text
@@ -114,15 +112,17 @@ application state pending = do
       broadcastPlayer s pID
       talk pID client state
 
-broadcastMessage :: OutputMessage -> ServerState -> IO ()
-broadcastMessage m = broadcast (T.pack $ show m)
+broadcastM :: OutputMessage -> WS.Connection -> IO ()
+broadcastM msg conn = do
+  T.putStrLn (T.pack (show msg))
+  WS.sendTextData conn (T.pack (show msg))
 
 broadcastPlayer :: ServerState -> PlayerID -> IO ()
 broadcastPlayer ServerState{..} pID =
-  case Map.lookup pID clients of
+  case Map.lookup pID players of
     Just Player{..} -> do
-      WS.sendTextData connection (T.pack $ "PID " ++ show pID)
-      WS.sendTextData connection (T.concat ["OWN ", displayOwnField field])
+      broadcastM (PlayerID pID) connection
+      broadcastM (Own field) connection
     Nothing -> return ()
 
 talk :: PlayerID -> WS.Connection -> MVar ServerState -> IO ()
@@ -132,12 +132,16 @@ talk pID conn state = forever $ do
     print msg
     print s'
     case read msg of
-      NewGame -> do
-        gameID <- randomIO
-        modifyMVar_ state $ \s -> return $ s { games = Map.insert gameID () (games s) }
-        broadcastMessage (NewGameID gameID) s'
-      -- JoinGame gameID -> do
-        -- return ()
+      -- NewGame -> do
+        -- gameID <- randomIO
+        -- modifyMVar_ state $ \s -> return $ s { games = Map.insert gameID () (games s) }
+        -- broadcastMessage (NewGameID gameID) s'
+      JoinGame pID ->
+        case Map.lookup pID (players s') of
+          Just Player{..} -> return ()
+          Nothing ->
+            broadcastM NotFoundGameID conn
+
       -- Attack -> do
         -- let f' = attack (read msg) (field s')
 
@@ -150,15 +154,15 @@ talk pID conn state = forever $ do
 
         -- liftIO $ readMVar state >>= broadcastField
 
-gameComplete :: BattleField -> Bool
-gameComplete = all (==0) . Map.elems . ships
+-- gameComplete :: BattleField -> Bool
+-- gameComplete = all (==0) . Map.elems . ships
 
 -- broadcastField :: ServerState -> IO ()
 -- broadcastField state@ServerState{..} =
   -- broadcast (displayField field) state
 
-displayOwnField :: BattleField -> T.Text
-displayOwnField bf = T.intercalate "" [ T.intercalate "" [ sc $ getCell (x, y) bf | y <- [0..height bf - 1] ] | x <- [0..width bf - 1] ]
+displayOwnField :: BattleField -> String
+displayOwnField bf = intercalate "" [ intercalate "" [ sc $ getCell (x, y) bf | y <- [0..height bf - 1] ] | x <- [0..width bf - 1] ]
   where
     sc Empty            = "E"
     sc Miss             = "M"

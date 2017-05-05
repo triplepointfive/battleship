@@ -1,17 +1,18 @@
-interface OutMessage {
-  build(): string;
-}
-
 type Callback = (msg: string) => void;
+
+// const url = "wss://powerful-headland-52719.herokuapp.com";
+const url = "ws://0.0.0.0:3636";
 
 export class Server {
   private socket: WebSocket;
+
+  private gameJoinErrorCallback: Callback;
 
   constructor(
     private playerIDCallback: Callback,
     private ownCallback: Callback
   ) {
-    this.socket = new WebSocket("wss://powerful-headland-52719.herokuapp.com");
+    this.socket = new WebSocket(url);
 
     this.socket.onopen = () => {
       this.socket.send("");
@@ -31,15 +32,23 @@ export class Server {
     this.socket.onerror = (error) => console.error("Error " + error);
   }
 
+  public joinGame(gameID: string, onError: Callback): void {
+    this.gameJoinErrorCallback = onError;
+    this.socket.send(`JoinGame ${gameID}`);
+  }
+
   private parseEvent(event: MessageEvent): void {
     const data = event.data.split(" ");
 
     switch (data[0]) {
-      case "PID":
+      case "PlayerID":
         this.playerIDCallback(data[1]);
         break;
-      case "OWN":
+      case "Own":
         this.ownCallback(data[1]);
+        break;
+      case "NotFoundGameID":
+        this.gameJoinErrorCallback(data[0]);
         break;
       default:
         console.error(`Invalid message ${event.data}`);
